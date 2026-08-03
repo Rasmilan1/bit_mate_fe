@@ -12,9 +12,11 @@ export async function fetchHealth() {
 }
 
 export async function downloadPdfFile(fileUrl, fileName) {
+  if (!fileUrl) return;
   const cleanName = (fileName || 'study-material').replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf';
   try {
     const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -23,14 +25,13 @@ export async function downloadPdfFile(fileUrl, fileName) {
     a.download = cleanName;
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+      if (document.body.contains(a)) document.body.removeChild(a);
+    }, 1000);
   } catch (err) {
-    const a = document.createElement('a');
-    a.href = fileUrl;
-    a.download = cleanName;
-    a.target = '_blank';
-    a.click();
+    console.warn('Direct blob download failed, opening link in new tab:', err);
+    window.open(fileUrl, '_blank', 'noopener,noreferrer');
   }
 }
 

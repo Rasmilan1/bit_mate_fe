@@ -138,11 +138,17 @@ function ReaderModalContent({ material, onClose }) {
             position: 'relative'
           }}>
             {material.file_url ? (
-              <iframe
-                src={pdfViewerSrc}
-                title={material.title}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-              />
+              <object
+                data={material.file_url}
+                type="application/pdf"
+                style={{ width: '100%', height: '100%' }}
+              >
+                <iframe
+                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(material.file_url)}&embedded=true`}
+                  title={material.title}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                />
+              </object>
             ) : (
               <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
                 <BookOpen size={48} style={{ opacity: 0.5, marginBottom: '12px' }} />
