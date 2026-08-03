@@ -1,4 +1,10 @@
-const API_BASE = '/api';
+const LIVE_BACKEND = 'https://bit-mate-be.vercel.app/api';
+
+// Uses VITE_API_BASE_URL env var if set, relative '/api' on localhost (proxied to http://localhost:5000), or live Vercel backend in production
+const isLocalhost = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (isLocalhost ? '/api' : LIVE_BACKEND);
 
 export async function fetchHealth() {
   const res = await fetch(`${API_BASE}/health`);
