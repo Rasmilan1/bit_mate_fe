@@ -228,9 +228,13 @@ function MainAppContent() {
   };
 
   const handleUploadMaterial = async (formData) => {
-    const newMat = await uploadMaterial(formData);
-    setMaterials([newMat, ...materials]);
-    loadData();
+    try {
+      const newMat = await uploadMaterial(formData);
+      setMaterials(prev => [newMat, ...prev.filter(m => String(m.id) !== String(newMat.id))]);
+      setTimeout(() => loadData(), 500);
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
+    }
   };
 
   const handleUpdateMaterialDetails = async (id, updatedData) => {
