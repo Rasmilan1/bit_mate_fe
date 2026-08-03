@@ -13,15 +13,53 @@ function ReaderModalContent({ material, onClose }) {
   const [activeTab, setActiveTab] = useState('pdf'); // 'pdf' or 'notes' on small screens
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  React.useEffect(() => {
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [loadingPdf, setLoadingPdf] = useState(Boolean(material.file_url));
+
+  useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const pdfViewerSrc = material.file_url && /^https?:\/\//i.test(material.file_url)
-    ? `https://docs.google.com/viewer?url=${encodeURIComponent(material.file_url)}&embedded=true`
-    : material.file_url;
+  useEffect(() => {
+    let isMounted = true;
+    let createdUrl = null;
+
+    if (!material.file_url) {
+      setLoadingPdf(false);
+      return;
+    }
+
+    setLoadingPdf(true);
+
+    fetch(material.file_url)
+      .then(res => {
+        if (!res.ok) throw new Error('Fetch failed');
+        return res.blob();
+      })
+      .then(blob => {
+        if (isMounted) {
+          createdUrl = URL.createObjectURL(blob);
+          setBlobUrl(createdUrl);
+          setLoadingPdf(false);
+        }
+      })
+      .catch(err => {
+        console.warn('PDF Blob load fallback to direct URL:', err);
+        if (isMounted) {
+          setBlobUrl(material.file_url);
+          setLoadingPdf(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+      if (createdUrl) {
+        URL.revokeObjectURL(createdUrl);
+      }
+    };
+  }, [material.file_url]);
 
   return (
     <div style={{
@@ -138,17 +176,17 @@ function ReaderModalContent({ material, onClose }) {
             position: 'relative'
           }}>
             {material.file_url ? (
-              <object
-                data={material.file_url}
-                type="application/pdf"
-                style={{ width: '100%', height: '100%' }}
-              >
+              loadingPdf ? (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 500 }}>Loading document viewer...</p>
+                </div>
+              ) : (
                 <iframe
-                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(material.file_url)}&embedded=true`}
+                  src={blobUrl || material.file_url}
                   title={material.title}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                 />
-              </object>
+              )
             ) : (
               <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
                 <BookOpen size={48} style={{ opacity: 0.5, marginBottom: '12px' }} />
