@@ -19,6 +19,10 @@ function ReaderModalContent({ material, onClose }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const pdfViewerSrc = material.file_url && /^https?:\/\//i.test(material.file_url)
+    ? `https://docs.google.com/viewer?url=${encodeURIComponent(material.file_url)}&embedded=true`
+    : material.file_url;
+
   return (
     <div style={{
       position: 'fixed',
@@ -135,7 +139,7 @@ function ReaderModalContent({ material, onClose }) {
           }}>
             {material.file_url ? (
               <iframe
-                src={material.file_url}
+                src={pdfViewerSrc}
                 title={material.title}
                 style={{ width: '100%', height: '100%', border: 'none' }}
               />
