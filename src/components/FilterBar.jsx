@@ -62,8 +62,8 @@ function CustomSubjectDropdown({ subjects, selectedSubject, onSelectSubject }) {
           background: '#ffffff',
           borderRadius: '12px',
           border: '1px solid var(--glass-border)',
-          boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15)',
-          zIndex: 999,
+          boxShadow: '0 12px 30px -5px rgba(15, 23, 42, 0.25)',
+          zIndex: 99999,
           maxHeight: '260px',
           overflowY: 'auto',
           padding: '6px'
@@ -142,6 +142,8 @@ export default function FilterBar({
 
   return (
     <div className="glass-card" style={{
+      position: 'relative',
+      zIndex: 100,
       padding: isMobile ? '12px 14px' : '14px 18px',
       marginBottom: '22px',
       display: 'flex',
