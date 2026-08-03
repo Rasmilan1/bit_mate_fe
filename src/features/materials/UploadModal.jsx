@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, UploadCloud, FileText, Loader2 } from 'lucide-react';
+import { uploadPdfDirectToSupabase } from '../../supabaseClient';
 
 function formatWeekInfo(val) {
   if (!val) return '';
@@ -98,16 +99,38 @@ export default function UploadModal({ isOpen, onClose, subjects, materials = [],
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
+      let fileData = null;
       if (file) {
-        formData.append('pdfFile', file);
+        try {
+          fileData = await uploadPdfDirectToSupabase(file);
+        } catch (directErr) {
+          console.warn('Direct upload notice, attempting server upload fallback:', directErr.message);
+        }
       }
-      formData.append('title', title.trim());
-      formData.append('subject_id', subjectId || '');
-      formData.append('week_info', formatWeekInfo(weekInfo));
-      if (tags) formData.append('tags', tags);
 
-      await onUpload(formData);
+      if (fileData && fileData.file_url) {
+        const payload = {
+          title: title.trim(),
+          subject_id: subjectId || null,
+          week_info: formatWeekInfo(weekInfo),
+          file_url: fileData.file_url,
+          file_path: fileData.file_path,
+          file_size: fileData.file_size,
+          tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : []
+        };
+        await onUpload(payload);
+      } else {
+        const formData = new FormData();
+        if (file) {
+          formData.append('pdfFile', file);
+        }
+        formData.append('title', title.trim());
+        formData.append('subject_id', subjectId || '');
+        formData.append('week_info', formatWeekInfo(weekInfo));
+        if (tags) formData.append('tags', tags);
+
+        await onUpload(formData);
+      }
       
       setFile(null);
       setTitle('');

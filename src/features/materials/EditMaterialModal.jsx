@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Edit2, UploadCloud, FileText, Loader2 } from 'lucide-react';
+import { uploadPdfDirectToSupabase } from '../../supabaseClient';
 
 function formatWeekInfo(val) {
   if (!val) return '';
@@ -70,7 +71,24 @@ export default function EditMaterialModal({ isOpen, onClose, material, onUpdate 
 
     setIsSaving(true);
     try {
+      let fileData = null;
       if (file) {
+        try {
+          fileData = await uploadPdfDirectToSupabase(file);
+        } catch (directErr) {
+          console.warn('Direct upload notice, attempting server upload fallback:', directErr.message);
+        }
+      }
+
+      if (fileData && fileData.file_url) {
+        await onUpdate(material.id, {
+          title: title.trim(),
+          week_info: formatWeekInfo(weekInfo),
+          file_url: fileData.file_url,
+          file_path: fileData.file_path,
+          file_size: fileData.file_size
+        });
+      } else if (file) {
         const formData = new FormData();
         formData.append('pdfFile', file);
         formData.append('title', title.trim());
