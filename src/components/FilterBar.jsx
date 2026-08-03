@@ -1,6 +1,115 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, X, Eye, EyeOff, ChevronDown, Edit2, BookOpen, Layers } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar, Plus, X, Eye, EyeOff, ChevronDown, Edit2, BookOpen, Check } from 'lucide-react';
 import { useAuth } from '../features/auth/AuthContext';
+
+function CustomSubjectDropdown({ subjects, selectedSubject, onSelectSubject }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const activeSubject = subjects.find(s => s.id === selectedSubject) || subjects[0];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+      {/* Trigger Box */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 12px',
+          fontSize: '0.86rem',
+          fontWeight: 600,
+          borderRadius: '10px',
+          background: 'var(--accent-light)',
+          color: 'var(--accent)',
+          border: '1px solid rgba(13, 148, 136, 0.3)',
+          cursor: 'pointer',
+          outline: 'none',
+          gap: '8px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
+          <BookOpen size={15} style={{ flexShrink: 0 }} />
+          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {activeSubject
+              ? `${activeSubject.subject_number ? `${activeSubject.subject_number} - ` : ''}${activeSubject.name}`
+              : 'Select Subject'}
+          </span>
+        </div>
+        <ChevronDown size={15} style={{ flexShrink: 0, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+      </button>
+
+      {/* Dropdown Menu Panel */}
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 6px)',
+          left: 0,
+          right: 0,
+          background: '#ffffff',
+          borderRadius: '12px',
+          border: '1px solid var(--glass-border)',
+          boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15)',
+          zIndex: 999,
+          maxHeight: '260px',
+          overflowY: 'auto',
+          padding: '6px'
+        }}>
+          {subjects.map(subj => {
+            const isSelected = selectedSubject === subj.id;
+            const label = `${subj.subject_number ? `${subj.subject_number} - ` : ''}${subj.name}`;
+            return (
+              <div
+                key={subj.id}
+                onClick={() => {
+                  onSelectSubject(subj.id);
+                  setIsOpen(false);
+                }}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: '0.84rem',
+                  fontWeight: isSelected ? 600 : 400,
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: isSelected ? 'var(--accent-light)' : 'transparent',
+                  color: isSelected ? 'var(--accent)' : 'var(--text-main)',
+                  transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.background = '#f8fafc';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginRight: '8px' }}>
+                  {label}
+                </span>
+                {isSelected && <Check size={14} style={{ flexShrink: 0 }} />}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function FilterBar({
   semesters,
@@ -18,7 +127,6 @@ export default function FilterBar({
 }) {
   const { user } = useAuth();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [viewMode, setViewMode] = useState('pills'); // 'pills' or 'dropdown'
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -30,7 +138,6 @@ export default function FilterBar({
     ? semesters
     : semesters.filter(s => s.is_visible !== false);
 
-  const activeSemesterObj = semesters.find(s => s.id === selectedSemester);
   const activeSubjectObj = subjects.find(s => s.id === selectedSubject);
 
   return (
@@ -134,41 +241,17 @@ export default function FilterBar({
         flexWrap: isMobile ? 'wrap' : 'nowrap',
         gap: '10px'
       }}>
-        {/* Mobile or Dropdown View Mode Selector */}
+        {/* Mobile or Small Screen View: Custom Styled React Dropdown */}
         {isMobile ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-            <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
-              <BookOpen size={15} style={{ position: 'absolute', left: '12px', color: 'var(--accent)', pointerEvents: 'none' }} />
-              <select
-                id="mobile-subject-select-main"
-                value={selectedSubject || ''}
-                onChange={(e) => onSelectSubject(e.target.value ? e.target.value : null)}
-                style={{
-                  width: '100%',
-                  padding: '9px 32px 9px 34px',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  borderRadius: '10px',
-                  background: 'var(--accent-light)',
-                  color: 'var(--accent)',
-                  border: '1px solid rgba(13, 148, 136, 0.25)',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  appearance: 'none',
-                  WebkitAppearance: 'none'
-                }}
-              >
-                {subjects.map(subj => (
-                  <option key={subj.id} value={subj.id} style={{ color: 'var(--text-main)', background: '#ffffff' }}>
-                    {subj.subject_number ? `${subj.subject_number} - ` : ''}{subj.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={15} style={{ position: 'absolute', right: '12px', color: 'var(--accent)', pointerEvents: 'none' }} />
-            </div>
+            <CustomSubjectDropdown
+              subjects={subjects}
+              selectedSubject={selectedSubject}
+              onSelectSubject={onSelectSubject}
+            />
 
             {user && (
-              <div style={{ display: 'flex', gap: '4px' }}>
+              <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                 {activeSubjectObj && (
                   <button
                     onClick={() => onEditSubject(activeSubjectObj)}
