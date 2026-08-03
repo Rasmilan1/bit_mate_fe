@@ -69,24 +69,6 @@ export default function FilterBar({
             <Calendar size={14} /> Semesters:
           </span>
 
-          {/* All Semesters Pill */}
-          <button
-            onClick={() => onSelectSemester(null)}
-            className="btn"
-            style={{
-              padding: '4px 11px',
-              fontSize: '0.8rem',
-              borderRadius: '7px',
-              fontWeight: 600,
-              background: selectedSemester === null ? 'var(--primary)' : '#f8fafc',
-              color: selectedSemester === null ? '#ffffff' : 'var(--text-muted)',
-              border: '1px solid ' + (selectedSemester === null ? 'var(--primary)' : 'var(--glass-border)'),
-              transition: 'all 0.15s ease'
-            }}
-          >
-            All
-          </button>
-
           {/* Individual Semester Pills */}
           {visibleSemesters.map(sem => {
             const isSelected = selectedSemester === sem.id;
@@ -224,24 +206,6 @@ export default function FilterBar({
             }}>
               <BookOpen size={14} /> Subjects:
             </span>
-
-            {/* All Subjects Filter Chip */}
-            <button
-              onClick={() => onSelectSubject(null)}
-              className="btn"
-              style={{
-                padding: '4px 10px',
-                fontSize: '0.8rem',
-                borderRadius: '7px',
-                fontWeight: 600,
-                background: selectedSubject === null ? 'var(--accent)' : '#f8fafc',
-                color: selectedSubject === null ? '#ffffff' : 'var(--text-muted)',
-                border: '1px solid ' + (selectedSubject === null ? 'var(--accent)' : 'var(--glass-border)'),
-                transition: 'all 0.15s ease'
-              }}
-            >
-              All ({subjects.length})
-            </button>
 
             {/* Individual Subject Chips */}
             {subjects.map(subject => {
