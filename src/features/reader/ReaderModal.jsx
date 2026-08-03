@@ -240,59 +240,11 @@ function ReaderModalContent({ material, onClose }) {
                   <p style={{ fontSize: '0.9rem', fontWeight: 500 }}>Loading document viewer...</p>
                 </div>
               ) : isMobile ? (
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '30px 20px',
-                  height: '100%',
-                  width: '100%',
-                  background: '#f8fafc',
-                  textAlign: 'center',
-                  gap: '16px'
-                }}>
-                  <div style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '16px',
-                    background: 'rgba(79, 70, 229, 0.1)',
-                    color: 'var(--primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.12)'
-                  }}>
-                    <FileText size={32} />
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '4px' }}>
-                      {material.title}
-                    </h4>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                      PDF Study Document
-                    </p>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '280px', marginTop: '8px' }}>
-                    <a
-                      href={material.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary"
-                      style={{ width: '100%', justifyContent: 'center', padding: '10px 16px', fontSize: '0.88rem', borderRadius: '8px' }}
-                    >
-                      <BookOpen size={16} /> Open PDF in Browser
-                    </a>
-                    <button
-                      onClick={() => downloadPdfFile(material.file_url, material.title)}
-                      className="btn btn-secondary"
-                      style={{ width: '100%', justifyContent: 'center', padding: '10px 16px', fontSize: '0.88rem', borderRadius: '8px' }}
-                    >
-                      <Download size={16} /> Download PDF File
-                    </button>
-                  </div>
-                </div>
+                <iframe
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(material.file_url)}&embedded=true`}
+                  title={material.title}
+                  style={{ width: '100%', height: '100%', border: 'none', background: '#ffffff' }}
+                />
               ) : (
                 <iframe
                   src={blobUrl || material.file_url}
