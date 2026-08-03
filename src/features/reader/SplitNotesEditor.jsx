@@ -21,7 +21,7 @@ function parseInlineFormatting(str) {
   const parts = cleaned.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-      return <strong key={i} style={{ color: 'var(--text-main)', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+      return <strong key={i} style={{ color: '#0f172a', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**') && part.length > 2) {
       return <em key={i} style={{ fontStyle: 'italic', color: '#475569' }}>{part.slice(1, -1)}</em>;
@@ -29,13 +29,14 @@ function parseInlineFormatting(str) {
     if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
       return (
         <code key={i} style={{
-          background: 'rgba(79, 70, 229, 0.08)',
-          color: 'var(--primary)',
-          padding: '2px 6px',
+          background: '#f1f5f9',
+          color: '#0f766e',
+          padding: '2px 7px',
           borderRadius: '5px',
-          fontFamily: 'monospace',
+          fontFamily: 'Consolas, Monaco, monospace',
           fontSize: '0.86em',
-          fontWeight: 600
+          fontWeight: 600,
+          border: '1px solid #e2e8f0'
         }}>
           {part.slice(1, -1)}
         </code>
@@ -45,12 +46,12 @@ function parseInlineFormatting(str) {
   });
 }
 
-// Simple, robust formatted text renderer for AI pasted markdown/rich text
+// State-of-the-art Executive Study Guide Renderer
 function renderFormattedContent(text) {
   if (!text || !text.trim()) {
     return (
-      <div style={{ color: 'var(--text-dim)', fontStyle: 'italic', padding: '20px 0', textAlign: 'center' }}>
-        No study summary available yet for this material.
+      <div style={{ color: 'var(--text-dim)', fontStyle: 'italic', padding: '30px 0', textAlign: 'center', fontSize: '0.92rem' }}>
+        📖 No study summary generated yet for this material. Click <strong>"Auto Generate (Gemini AI)"</strong> above!
       </div>
     );
   }
@@ -59,13 +60,16 @@ function renderFormattedContent(text) {
   const elements = [];
   let inList = false;
   let listItems = [];
+  let inCodeBlock = false;
+  let codeBlockLines = [];
+  let codeLang = '';
 
   const flushList = (key) => {
     if (inList && listItems.length > 0) {
       elements.push(
-        <ul key={`list-${key}`} style={{ paddingLeft: '20px', margin: '8px 0 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <ul key={`list-${key}`} style={{ paddingLeft: '20px', margin: '10px 0 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {listItems.map((item, idx) => (
-            <li key={idx} style={{ lineHeight: 1.6, color: '#334155', fontSize: '0.92rem' }}>
+            <li key={idx} style={{ lineHeight: 1.65, color: '#334155', fontSize: '0.93rem' }}>
               {parseInlineFormatting(item)}
             </li>
           ))}
@@ -76,14 +80,58 @@ function renderFormattedContent(text) {
     }
   };
 
+  const flushCodeBlock = (key) => {
+    if (inCodeBlock && codeBlockLines.length > 0) {
+      const codeText = codeBlockLines.join('\n');
+      elements.push(
+        <div key={`code-${key}`} style={{
+          background: '#0f172a',
+          color: '#e2e8f0',
+          padding: '14px 18px',
+          borderRadius: '10px',
+          margin: '14px 0',
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)',
+          overflowX: 'auto'
+        }}>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 700, letterSpacing: '0.06em' }}>
+            💻 {codeLang || 'SYNTAX BLUEPRINT'}
+          </div>
+          <pre style={{ margin: 0, fontFamily: 'Consolas, Monaco, "Andale Mono", monospace', fontSize: '0.88rem', lineHeight: 1.5, color: '#38bdf8' }}>
+            {codeText}
+          </pre>
+        </div>
+      );
+      codeBlockLines = [];
+      inCodeBlock = false;
+      codeLang = '';
+    }
+  };
+
   lines.forEach((line, idx) => {
     const trimmed = line.trim();
+
+    // Code block start / end (```)
+    if (trimmed.startsWith('```')) {
+      if (inCodeBlock) {
+        flushCodeBlock(idx);
+      } else {
+        flushList(idx);
+        inCodeBlock = true;
+        codeLang = trimmed.replace(/^```/, '').trim();
+      }
+      return;
+    }
+
+    if (inCodeBlock) {
+      codeBlockLines.push(line);
+      return;
+    }
 
     // Horizontal Rule (---, ***, ___)
     if (/^[-*_]{3,}$/.test(trimmed)) {
       flushList(idx);
       elements.push(
-        <hr key={idx} style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '16px 0' }} />
+        <hr key={idx} style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '20px 0' }} />
       );
     }
     // Math Formula line ($$ ... $$ or \text)
@@ -91,15 +139,16 @@ function renderFormattedContent(text) {
       flushList(idx);
       elements.push(
         <div key={idx} style={{
-          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(13, 148, 136, 0.06) 100%)',
-          border: '1px solid rgba(79, 70, 229, 0.2)',
-          padding: '10px 14px',
-          borderRadius: '10px',
-          margin: '10px 0',
-          fontSize: '0.92rem',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+          border: '1px solid #cbd5e1',
+          borderLeft: '4px solid var(--primary)',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          margin: '12px 0',
+          fontSize: '0.94rem',
           fontWeight: 600,
-          color: 'var(--primary)',
-          fontFamily: 'monospace'
+          color: '#0f172a',
+          fontFamily: 'Consolas, Monaco, monospace'
         }}>
           📐 {cleanText(trimmed)}
         </div>
@@ -108,40 +157,52 @@ function renderFormattedContent(text) {
     // Headers (#, ##, ###)
     else if (trimmed.startsWith('#')) {
       flushList(idx);
-      const level = trimmed.match(/^#+/)[0].length;
       const titleText = trimmed.replace(/^#+\s*/, '');
-      const fontSize = level === 1 ? '1.15rem' : level === 2 ? '1.05rem' : '0.96rem';
       elements.push(
-        <h4 key={idx} style={{
-          fontSize,
-          fontWeight: 700,
-          color: 'var(--primary)',
-          margin: '16px 0 8px',
-          paddingBottom: '4px',
-          borderBottom: level <= 2 ? '1px solid #f1f5f9' : 'none'
+        <div key={idx} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          margin: '22px 0 10px 0',
+          paddingBottom: '6px',
+          borderBottom: '2px solid rgba(79, 70, 229, 0.1)'
         }}>
-          {parseInlineFormatting(titleText)}
-        </h4>
+          <div style={{
+            width: '6px',
+            height: '18px',
+            background: 'var(--primary)',
+            borderRadius: '3px'
+          }} />
+          <h4 style={{
+            fontSize: '1.02rem',
+            fontWeight: 700,
+            color: 'var(--text-main)',
+            margin: 0,
+            letterSpacing: '-0.01em'
+          }}>
+            {parseInlineFormatting(titleText)}
+          </h4>
+        </div>
       );
     }
     // Callouts / Quotes (>)
     else if (trimmed.startsWith('>')) {
       flushList(idx);
-      // Clean inner ### if present inside quote
       const quoteText = trimmed.replace(/^>\s*/, '').replace(/^#+\s*/, '');
       elements.push(
         <div key={idx} style={{
-          background: 'rgba(13, 148, 136, 0.07)',
-          borderLeft: '4px solid var(--accent)',
-          padding: '10px 14px',
+          background: '#f0fdf4',
+          borderLeft: '4px solid #10b981',
+          padding: '12px 16px',
           borderRadius: '0 10px 10px 0',
-          margin: '10px 0',
-          color: '#0f766e',
-          fontSize: '0.91rem',
+          margin: '12px 0',
+          color: '#065f46',
+          fontSize: '0.92rem',
           fontWeight: 500,
-          lineHeight: 1.6
+          lineHeight: 1.6,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
         }}>
-          {parseInlineFormatting(quoteText)}
+          💡 <strong>Exam Insight:</strong> {parseInlineFormatting(quoteText)}
         </div>
       );
     }
@@ -159,7 +220,7 @@ function renderFormattedContent(text) {
     else {
       flushList(idx);
       elements.push(
-        <p key={idx} style={{ margin: '5px 0', lineHeight: 1.65, color: '#334155', fontSize: '0.92rem' }}>
+        <p key={idx} style={{ margin: '6px 0', lineHeight: 1.68, color: '#334155', fontSize: '0.93rem' }}>
           {parseInlineFormatting(trimmed)}
         </p>
       );
@@ -167,6 +228,7 @@ function renderFormattedContent(text) {
   });
 
   flushList(lines.length);
+  flushCodeBlock(lines.length);
   return <div style={{ display: 'flex', flexDirection: 'column' }}>{elements}</div>;
 }
 
