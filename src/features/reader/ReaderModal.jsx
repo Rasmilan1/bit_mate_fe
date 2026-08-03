@@ -204,7 +204,7 @@ function ReaderModalContent({ material, onClose }) {
             minWidth: isMobile ? '100%' : '320px',
             height: '100%'
           }}>
-            <SplitNotesEditor materialId={material.id} />
+            <SplitNotesEditor materialId={material.id} material={material} />
           </div>
         )}
       </div>

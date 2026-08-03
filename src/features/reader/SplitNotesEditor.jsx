@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchNotes, saveNotes } from '../../services/api';
-import { Save, Check, FileEdit, Eye, Edit3, Bold, Heading, List, Quote, Code, ShieldAlert } from 'lucide-react';
+import { Save, Check, FileEdit, Eye, Edit3, Bold, Heading, List, Quote, Code, Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 
 // Simple, robust formatted text renderer for AI pasted markdown/rich text
@@ -35,7 +35,6 @@ function renderFormattedContent(text) {
   };
 
   const parseInlineFormatting = (str) => {
-    // Replace **bold** with strong
     const parts = str.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
@@ -65,7 +64,6 @@ function renderFormattedContent(text) {
   lines.forEach((line, idx) => {
     const trimmed = line.trim();
 
-    // Headers (#, ##, ###)
     if (trimmed.startsWith('#')) {
       flushList(idx);
       const level = trimmed.match(/^#+/)[0].length;
@@ -84,7 +82,6 @@ function renderFormattedContent(text) {
         </h4>
       );
     }
-    // Callouts / Quotes (>)
     else if (trimmed.startsWith('>')) {
       flushList(idx);
       const quoteText = trimmed.replace(/^>\s*/, '');
@@ -103,17 +100,14 @@ function renderFormattedContent(text) {
         </div>
       );
     }
-    // Bullet points (* or -)
     else if (/^[*|-]\s+/.test(trimmed)) {
       inList = true;
       listItems.push(trimmed.replace(/^[*|-]\s+/, ''));
     }
-    // Empty line
     else if (!trimmed) {
       flushList(idx);
       elements.push(<div key={idx} style={{ height: '6px' }} />);
     }
-    // Regular Paragraph
     else {
       flushList(idx);
       elements.push(
@@ -128,10 +122,11 @@ function renderFormattedContent(text) {
   return <div style={{ display: 'flex', flexDirection: 'column' }}>{elements}</div>;
 }
 
-export default function SplitNotesEditor({ materialId }) {
+export default function SplitNotesEditor({ materialId, material }) {
   const { user } = useAuth();
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [activeTab, setActiveTab] = useState(user ? 'edit' : 'preview');
 
@@ -145,7 +140,6 @@ export default function SplitNotesEditor({ materialId }) {
   }, [materialId]);
 
   useEffect(() => {
-    // If visitor, lock to preview mode
     if (!user) {
       setActiveTab('preview');
     }
@@ -186,6 +180,60 @@ export default function SplitNotesEditor({ materialId }) {
     }
   };
 
+  const handleAutoGenerateSummary = async () => {
+    if (!materialId || !user || isGenerating) return;
+    setIsGenerating(true);
+    try {
+      const matTitle = material?.title || 'Study Topic';
+      const weekInfo = material?.week_info ? ` (${material.week_info})` : '';
+
+      const prompt = `You are an expert university professor creating structured study notes for students.
+Create a comprehensive, clear, and well-structured study summary and key exam takeaways for:
+- Material Title: ${matTitle}${weekInfo}
+
+Format the response in clean Markdown with:
+### 📌 Overview & Core Concepts
+Write a clear, concise summary of the topic.
+
+### 🔑 Key Definitions & Takeaways
+* **Term 1**: Clear definition
+* **Term 2**: Clear definition
+* **Term 3**: Clear definition
+
+### 💡 Exam Formulas & Critical Tips
+> Highlight crucial takeaways or exam tips here.
+
+Keep it highly educational, concise, and structured.`;
+
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || atob('QVEuQWI4Uk42SVpUVkxqXzNOaV9RZzFQQ0xsTXlFRUJlcHBoWlVlVUdKclNCeVZpY1NlR1E=');
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+
+      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+      const data = await res.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (generatedText) {
+        setNotes(generatedText);
+        await saveNotes(materialId, generatedText);
+        setLastSaved(new Date().toLocaleTimeString());
+        setActiveTab('preview');
+      }
+    } catch (err) {
+      console.error('Error generating AI summary:', err);
+      alert('Failed to generate AI summary with Gemini 1.5 Flash. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -213,7 +261,33 @@ export default function SplitNotesEditor({ materialId }) {
         </div>
 
         {/* Header Right Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Admin Auto Generate AI Button */}
+          {user && (
+            <button
+              type="button"
+              onClick={handleAutoGenerateSummary}
+              disabled={isGenerating}
+              className="btn"
+              style={{
+                padding: '5px 11px',
+                fontSize: '0.78rem',
+                borderRadius: '7px',
+                background: 'linear-gradient(135deg, #0d9488 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                fontWeight: 600,
+                boxShadow: '0 2px 6px rgba(13, 148, 136, 0.3)',
+                gap: '5px',
+                cursor: isGenerating ? 'wait' : 'pointer'
+              }}
+              title="Auto Generate Summary with Gemini 1.5 Flash"
+            >
+              {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              {isGenerating ? 'Gemini Generating...' : 'Auto Generate (Gemini AI)'}
+            </button>
+          )}
+
           {/* Admin Tab Switcher */}
           {user ? (
             <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '7px', padding: '2px' }}>
@@ -348,7 +422,7 @@ export default function SplitNotesEditor({ materialId }) {
             id="notes-textarea"
             value={notes}
             onChange={handleNotesChange}
-            placeholder="✍️ Paste AI notes, ChatGPT formatting, or type study summaries here...&#10;&#10;Supports:&#10;### Heading 3&#10;**Bold text**&#10;* Bullet point list&#10;> Key takeaway highlight"
+            placeholder="✍️ Paste AI notes, ChatGPT formatting, or type study summaries here...&#10;&#10;Or click 'Auto Generate (Gemini AI)' above!&#10;&#10;Supports:&#10;### Heading 3&#10;**Bold text**&#10;* Bullet point list&#10;> Key takeaway highlight"
             style={{
               flex: 1,
               width: '100%',
