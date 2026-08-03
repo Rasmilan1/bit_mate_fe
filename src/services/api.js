@@ -114,10 +114,12 @@ export async function fetchMaterials() {
   return res.json();
 }
 
-export async function uploadMaterial(formData) {
+export async function uploadMaterial(materialData) {
+  const isFormData = materialData instanceof FormData;
   const res = await fetch(`${API_BASE}/materials/upload`, {
     method: 'POST',
-    body: formData
+    headers: isFormData ? undefined : { 'Content-Type': 'application/json' },
+    body: isFormData ? materialData : JSON.stringify(materialData)
   });
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
