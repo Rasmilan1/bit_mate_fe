@@ -1,10 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, Trash2, FileText, Download, Edit2 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { downloadPdfFile } from '../../services/api';
 
 export default function MaterialCard({ material, subject, onOpenReader, onEdit, onDelete }) {
   const { user } = useAuth();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const hasPdf = Boolean(material.file_url);
 
   const formatFileSize = (bytes) => {
@@ -29,22 +37,22 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
       onClick={handleCardClick}
       className="glass-card animate-fade-in"
       style={{
-        padding: '12px 18px',
+        padding: isMobile ? '12px 14px' : '14px 18px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '14px',
+        gap: '12px',
         background: '#ffffff',
         cursor: hasPdf ? 'pointer' : 'default',
         borderRadius: '12px',
-        opacity: hasPdf ? 1 : 0.82,
+        opacity: hasPdf ? 1 : 0.85,
         transition: 'all 0.15s ease-in-out'
       }}
     >
       {/* Left PDF Icon Badge */}
       <div style={{
-        width: '42px',
-        height: '42px',
+        width: isMobile ? '38px' : '44px',
+        height: isMobile ? '38px' : '44px',
         borderRadius: '10px',
         backgroundColor: hasPdf ? 'var(--primary-light)' : '#f1f5f9',
         color: hasPdf ? 'var(--primary)' : '#94a3b8',
@@ -53,48 +61,63 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
         justifyContent: 'center',
         flexShrink: 0
       }}>
-        <FileText size={22} />
+        <FileText size={isMobile ? 20 : 22} />
       </div>
 
       {/* Center Title & Metadata */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
         <h4 style={{
-          fontSize: '0.95rem',
+          fontSize: isMobile ? '0.88rem' : '0.95rem',
           fontWeight: 600,
           color: hasPdf ? 'var(--text-main)' : '#64748b',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          marginBottom: '3px'
+          lineHeight: 1.3,
+          wordBreak: 'break-word',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden'
         }}>
           {weekLabel && (
             <span style={{
               display: 'inline-block',
-              fontSize: '0.76rem',
+              fontSize: '0.74rem',
               fontWeight: 700,
-              padding: '1px 7px',
+              padding: '1px 6px',
               borderRadius: '5px',
               backgroundColor: hasPdf ? 'var(--primary-light)' : '#e2e8f0',
               color: hasPdf ? 'var(--primary)' : '#64748b',
               border: '1px solid ' + (hasPdf ? 'rgba(79, 70, 229, 0.2)' : '#cbd5e1'),
-              marginRight: '8px',
-              verticalAlign: 'middle',
-              transform: 'translateY(-1px)'
+              marginRight: '6px',
+              verticalAlign: 'middle'
             }}>
               {weekLabel}
             </span>
           )}
           {material.title}
         </h4>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span>{subject ? subject.name : 'General'}</span>
-          <span>•</span>
-          <span>{hasPdf ? formatFileSize(material.file_size) : 'No PDF attached'}</span>
+
+        {/* Metadata info row */}
+        <div style={{
+          fontSize: '0.76rem',
+          color: 'var(--text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '5px 8px',
+          lineHeight: 1.2
+        }}>
+          <span style={{ fontWeight: 500, color: '#475569' }}>
+            {subject ? subject.name : 'General'}
+          </span>
+          <span style={{ opacity: 0.5 }}>•</span>
+          <span style={{ fontWeight: 600, color: hasPdf ? 'var(--primary)' : '#94a3b8' }}>
+            {hasPdf ? formatFileSize(material.file_size) : 'No PDF attached'}
+          </span>
         </div>
       </div>
 
-      {/* Right Action Icons */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+      {/* Right Action Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
         {hasPdf && material.file_url && (
           <button
             type="button"
@@ -103,11 +126,16 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
               downloadPdfFile(material.file_url, material.title);
             }}
             className="btn btn-secondary"
-            style={{ padding: '7px 11px', borderRadius: '8px', fontSize: '0.82rem', gap: '6px' }}
+            style={{
+              padding: isMobile ? '6px 9px' : '7px 12px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              gap: '4px'
+            }}
             title="Download PDF"
           >
             <Download size={15} />
-            <span className="hide-mobile">Download</span>
+            {!isMobile && <span>Download</span>}
           </button>
         )}
         {user && (
@@ -120,7 +148,7 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
                   onEdit(material);
                 }}
                 className="btn btn-secondary"
-                style={{ padding: '7px 10px', borderRadius: '8px' }}
+                style={{ padding: isMobile ? '6px 8px' : '7px 10px', borderRadius: '8px' }}
                 title="Edit Material"
               >
                 <Edit2 size={15} />
@@ -133,7 +161,7 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
                 onDelete(material.id);
               }}
               className="btn btn-danger"
-              style={{ padding: '7px 10px', borderRadius: '8px' }}
+              style={{ padding: isMobile ? '6px 8px' : '7px 10px', borderRadius: '8px' }}
               title="Delete Material"
             >
               <Trash2 size={15} />
