@@ -95,17 +95,29 @@ function MainAppContent() {
     loadData();
   }, []);
 
+  // Deduplicate semesters by name
+  const uniqueSemesters = React.useMemo(() => {
+    const seen = new Set();
+    return (semesters || []).filter(s => {
+      if (!s || !s.name) return false;
+      const key = s.name.trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [semesters]);
+
   // Auto-select first public visible semester for normal visitors if no valid selection stored
   useEffect(() => {
-    if (!user && semesters.length > 0) {
-      const publicSemesters = semesters.filter(s => s.is_visible !== false);
+    if (!user && uniqueSemesters.length > 0) {
+      const publicSemesters = uniqueSemesters.filter(s => s.is_visible !== false);
       if (publicSemesters.length > 0) {
         if (!selectedSemester || !publicSemesters.some(s => String(s.id) === String(selectedSemester))) {
           handleSelectSemester(publicSemesters[0].id);
         }
       }
     }
-  }, [user, semesters, selectedSemester]);
+  }, [user, uniqueSemesters, selectedSemester]);
 
   // Filter subjects based on selected semester
   const filteredSubjects = React.useMemo(() => {
@@ -258,7 +270,7 @@ function MainAppContent() {
       <main style={{ flex: 1, padding: '32px 24px', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
         {/* Unified Compact Filter Bar (Semesters + Subjects on a single sleek line) */}
         <FilterBar
-          semesters={semesters}
+          semesters={uniqueSemesters}
           selectedSemester={selectedSemester}
           onSelectSemester={(semId) => {
             handleSelectSemester(semId);
