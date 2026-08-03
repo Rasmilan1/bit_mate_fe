@@ -144,6 +144,9 @@ export default function FilterBar({
     <div className="glass-card" style={{
       position: 'relative',
       zIndex: 100,
+      width: '100%',
+      maxWidth: '100%',
+      boxSizing: 'border-box',
       padding: isMobile ? '12px 14px' : '14px 18px',
       marginBottom: '22px',
       display: 'flex',
@@ -159,6 +162,9 @@ export default function FilterBar({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '10px',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
         paddingBottom: '10px',
         borderBottom: '1px solid #f1f5f9'
       }}>

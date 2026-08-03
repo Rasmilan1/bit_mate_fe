@@ -271,7 +271,7 @@ function MainAppContent() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header isSupabaseConnected={isSupabaseConnected} />
 
-      <main style={{ flex: 1, padding: '32px 24px', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
+      <main style={{ flex: 1, padding: 'clamp(14px, 3vw, 28px)', maxWidth: '1280px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         {/* Unified Compact Filter Bar (Semesters + Subjects on a single sleek line) */}
         <FilterBar
           semesters={uniqueSemesters}

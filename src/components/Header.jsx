@@ -40,9 +40,6 @@ export default function Header({ isSupabaseConnected }) {
           <h1 style={{ fontSize: 'clamp(1rem, 4vw, 1.25rem)', fontWeight: 800, background: 'linear-gradient(90deg, #0f172a, #334155)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', whiteSpace: 'nowrap' }}>
             BITMATE
           </h1>
-          <span className="hide-on-mobile" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Monitor size={12} /> <Smartphone size={12} /> Multi-Device PDF Manager
-          </span>
         </div>
       </div>
 
