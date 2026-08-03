@@ -3,6 +3,48 @@ import { fetchNotes, saveNotes } from '../../services/api';
 import { Save, Check, FileEdit, Eye, Edit3, Bold, Heading, List, Quote, Code, Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 
+function cleanText(str) {
+  if (!str) return '';
+  return str
+    .replace(/\\text\{([^}]+)\}/g, '$1')
+    .replace(/\\texttt\{([^}]+)\}/g, '$1')
+    .replace(/\$\$/g, '')
+    .replace(/\\/g, '')
+    .trim();
+}
+
+function parseInlineFormatting(str) {
+  if (!str) return '';
+  const cleaned = cleanText(str);
+  
+  // Split on **bold**, *italic*, and `code`
+  const parts = cleaned.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return <strong key={i} style={{ color: 'var(--text-main)', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**') && part.length > 2) {
+      return <em key={i} style={{ fontStyle: 'italic', color: '#475569' }}>{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+      return (
+        <code key={i} style={{
+          background: 'rgba(79, 70, 229, 0.08)',
+          color: 'var(--primary)',
+          padding: '2px 6px',
+          borderRadius: '5px',
+          fontFamily: 'monospace',
+          fontSize: '0.86em',
+          fontWeight: 600
+        }}>
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+}
+
 // Simple, robust formatted text renderer for AI pasted markdown/rich text
 function renderFormattedContent(text) {
   if (!text || !text.trim()) {
@@ -21,9 +63,9 @@ function renderFormattedContent(text) {
   const flushList = (key) => {
     if (inList && listItems.length > 0) {
       elements.push(
-        <ul key={`list-${key}`} style={{ paddingLeft: '20px', margin: '8px 0 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <ul key={`list-${key}`} style={{ paddingLeft: '20px', margin: '8px 0 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {listItems.map((item, idx) => (
-            <li key={idx} style={{ lineHeight: 1.5, color: '#334155' }}>
+            <li key={idx} style={{ lineHeight: 1.6, color: '#334155', fontSize: '0.92rem' }}>
               {parseInlineFormatting(item)}
             </li>
           ))}
@@ -34,37 +76,37 @@ function renderFormattedContent(text) {
     }
   };
 
-  const parseInlineFormatting = (str) => {
-    const parts = str.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} style={{ color: 'var(--text-main)', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
-        return <em key={i} style={{ fontStyle: 'italic' }}>{part.slice(1, -1)}</em>;
-      }
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return (
-          <code key={i} style={{
-            background: 'rgba(79, 70, 229, 0.08)',
-            color: 'var(--primary)',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            fontFamily: 'monospace',
-            fontSize: '0.85em'
-          }}>
-            {part.slice(1, -1)}
-          </code>
-        );
-      }
-      return part;
-    });
-  };
-
   lines.forEach((line, idx) => {
     const trimmed = line.trim();
 
-    if (trimmed.startsWith('#')) {
+    // Horizontal Rule (---, ***, ___)
+    if (/^[-*_]{3,}$/.test(trimmed)) {
+      flushList(idx);
+      elements.push(
+        <hr key={idx} style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '16px 0' }} />
+      );
+    }
+    // Math Formula line ($$ ... $$ or \text)
+    else if (trimmed.startsWith('$$') || trimmed.includes('\\text{') || trimmed.includes('\\texttt{')) {
+      flushList(idx);
+      elements.push(
+        <div key={idx} style={{
+          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(13, 148, 136, 0.06) 100%)',
+          border: '1px solid rgba(79, 70, 229, 0.2)',
+          padding: '10px 14px',
+          borderRadius: '10px',
+          margin: '10px 0',
+          fontSize: '0.92rem',
+          fontWeight: 600,
+          color: 'var(--primary)',
+          fontFamily: 'monospace'
+        }}>
+          📐 {cleanText(trimmed)}
+        </div>
+      );
+    }
+    // Headers (#, ##, ###)
+    else if (trimmed.startsWith('#')) {
       flushList(idx);
       const level = trimmed.match(/^#+/)[0].length;
       const titleText = trimmed.replace(/^#+\s*/, '');
@@ -74,44 +116,50 @@ function renderFormattedContent(text) {
           fontSize,
           fontWeight: 700,
           color: 'var(--primary)',
-          margin: '14px 0 6px',
-          paddingBottom: '3px',
+          margin: '16px 0 8px',
+          paddingBottom: '4px',
           borderBottom: level <= 2 ? '1px solid #f1f5f9' : 'none'
         }}>
           {parseInlineFormatting(titleText)}
         </h4>
       );
     }
+    // Callouts / Quotes (>)
     else if (trimmed.startsWith('>')) {
       flushList(idx);
-      const quoteText = trimmed.replace(/^>\s*/, '');
+      // Clean inner ### if present inside quote
+      const quoteText = trimmed.replace(/^>\s*/, '').replace(/^#+\s*/, '');
       elements.push(
         <div key={idx} style={{
-          background: 'var(--accent-light)',
+          background: 'rgba(13, 148, 136, 0.07)',
           borderLeft: '4px solid var(--accent)',
-          padding: '8px 12px',
-          borderRadius: '0 8px 8px 0',
+          padding: '10px 14px',
+          borderRadius: '0 10px 10px 0',
           margin: '10px 0',
           color: '#0f766e',
-          fontSize: '0.9rem',
-          fontWeight: 500
+          fontSize: '0.91rem',
+          fontWeight: 500,
+          lineHeight: 1.6
         }}>
           {parseInlineFormatting(quoteText)}
         </div>
       );
     }
+    // Bullet points (* or -)
     else if (/^[*|-]\s+/.test(trimmed)) {
       inList = true;
       listItems.push(trimmed.replace(/^[*|-]\s+/, ''));
     }
+    // Empty line
     else if (!trimmed) {
       flushList(idx);
       elements.push(<div key={idx} style={{ height: '6px' }} />);
     }
+    // Regular Paragraph
     else {
       flushList(idx);
       elements.push(
-        <p key={idx} style={{ margin: '4px 0', lineHeight: 1.6, color: '#334155', fontSize: '0.91rem' }}>
+        <p key={idx} style={{ margin: '5px 0', lineHeight: 1.65, color: '#334155', fontSize: '0.92rem' }}>
           {parseInlineFormatting(trimmed)}
         </p>
       );
@@ -187,23 +235,20 @@ export default function SplitNotesEditor({ materialId, material }) {
       const matTitle = material?.title || 'Study Topic';
       const weekInfo = material?.week_info ? ` (${material.week_info})` : '';
 
-      const prompt = `You are an expert university professor creating structured study notes for students.
-Create a comprehensive, clear, and well-structured study summary and key exam takeaways for:
+      const prompt = `You are a top university professor creating easy-to-read, crystal-clear study notes for students.
+Create a structured, readable study summary and exam takeaways for:
 - Material Title: ${matTitle}${weekInfo}
 
-Format the response in clean Markdown with:
-### 📌 Overview & Core Concepts
-Write a clear, concise summary of the topic.
-
-### 🔑 Key Definitions & Takeaways
-* **Term 1**: Clear definition
-* **Term 2**: Clear definition
-* **Term 3**: Clear definition
-
-### 💡 Exam Formulas & Critical Tips
-> Highlight crucial takeaways or exam tips here.
-
-Keep it highly educational, concise, and structured.`;
+IMPORTANT FORMATTING RULES:
+1. Do NOT use LaTeX math tags like \\text{} or \\texttt{}. Write equations simply like:
+   Class = State (Instance Variables) + Behavior (Methods)
+2. Use clean Markdown headings:
+   ### 📌 Overview & Core Concepts
+   ### 🔑 Key Definitions & Takeaways
+   ### 📐 Key Formulas & Equations
+   ### 💡 Exam Tips & Gotchas
+3. Use bolding (**term**) for key definitions.
+4. Keep bullet points concise and easy to read.`;
 
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || atob('QVEuQWI4Uk42SVpUVkxqXzNOaV9RZzFQQ0xsTXlFRUJlcHBoWlVlVUdKclNCeVZpY1NlR1E=');
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
