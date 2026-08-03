@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, BookOpen, SidebarClose, SidebarOpen, Download } from 'lucide-react';
 import SplitNotesEditor from './SplitNotesEditor';
 import { downloadPdfFile } from '../../services/api';
