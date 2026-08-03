@@ -47,11 +47,15 @@ function parseInlineFormatting(str) {
 }
 
 // State-of-the-art Executive Study Guide Renderer
-function renderFormattedContent(text) {
+function renderFormattedContent(text, isAdmin = false) {
   if (!text || !text.trim()) {
     return (
       <div style={{ color: 'var(--text-dim)', fontStyle: 'italic', padding: '30px 0', textAlign: 'center', fontSize: '0.92rem' }}>
-        📖 No study summary generated yet for this material. Click <strong>"Auto Generate (Gemini AI)"</strong> above!
+        {isAdmin ? (
+          <>📖 No study summary generated yet for this material. Click <strong>"Auto Generate (Gemini AI)"</strong> above!</>
+        ) : (
+          <>📖 No study summary available yet for this material.</>
+        )}
       </div>
     );
   }
@@ -545,7 +549,7 @@ IMPORTANT FORMATTING RULES:
           />
         ) : (
           <div style={{ flex: 1 }}>
-            {renderFormattedContent(notes)}
+            {renderFormattedContent(notes, Boolean(user))}
           </div>
         )}
       </div>
