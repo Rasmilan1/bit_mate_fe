@@ -158,7 +158,6 @@ export default function FilterBar({
                   WebkitAppearance: 'none'
                 }}
               >
-                <option value="">All Subjects ({subjects.length})</option>
                 {subjects.map(subj => (
                   <option key={subj.id} value={subj.id} style={{ color: 'var(--text-main)', background: '#ffffff' }}>
                     {subj.subject_number ? `${subj.subject_number} - ` : ''}{subj.name}
