@@ -8,6 +8,7 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
   const { user } = useAuth();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const [hasNotes, setHasNotes] = useState(false);
+  const [isCheckingNotes, setIsCheckingNotes] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
@@ -17,7 +18,11 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
   }, []);
 
   useEffect(() => {
-    if (!material.id) return;
+    if (!material.id) {
+      setIsCheckingNotes(false);
+      return;
+    }
+    setIsCheckingNotes(true);
     fetchNotes(material.id)
       .then(data => {
         if (data && data.content && data.content.trim()) {
@@ -26,7 +31,8 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
           setHasNotes(false);
         }
       })
-      .catch(() => setHasNotes(false));
+      .catch(() => setHasNotes(false))
+      .finally(() => setIsCheckingNotes(false));
   }, [material.id]);
 
   const hasPdf = Boolean(material.file_url);
@@ -179,9 +185,23 @@ IMPORTANT FORMATTING RULES:
 
       {/* Right Action Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-        {/* Admin Auto-Generate Summary Button / Ready Badge */}
+        {/* Admin Auto-Generate Summary Button / Ready Badge / Checking Spinner */}
         {user && hasPdf && (
-          !hasNotes ? (
+          isCheckingNotes ? (
+            <span
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--text-muted)',
+                fontWeight: 500,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '3px 8px'
+              }}
+            >
+              <Loader2 size={12} className="animate-spin" /> {!isMobile && 'Checking...'}
+            </span>
+          ) : !hasNotes ? (
             <button
               type="button"
               onClick={handleAutoGenerateCard}

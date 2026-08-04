@@ -242,27 +242,32 @@ export default function SplitNotesEditor({ materialId, material }) {
   const [savedNotes, setSavedNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(true);
   const [lastSaved, setLastSaved] = useState(null);
-  const [activeTab, setActiveTab] = useState(user ? 'edit' : 'preview');
+  const [activeTab, setActiveTab] = useState('preview');
 
   const hasChanges = notes.trim() !== savedNotes.trim();
 
   useEffect(() => {
     if (!materialId) return;
+    setIsLoadingNotes(true);
     fetchNotes(materialId)
       .then(data => {
         const content = data.content || '';
         setNotes(content);
         setSavedNotes(content);
+        // Default to 'preview' (View) tab if notes exist, or 'edit' if empty and user is Admin
+        if (content && content.trim()) {
+          setActiveTab('preview');
+        } else if (user) {
+          setActiveTab('edit');
+        } else {
+          setActiveTab('preview');
+        }
       })
-      .catch(err => console.error('Error loading notes:', err));
-  }, [materialId]);
-
-  useEffect(() => {
-    if (!user) {
-      setActiveTab('preview');
-    }
-  }, [user]);
+      .catch(err => console.error('Error loading notes:', err))
+      .finally(() => setIsLoadingNotes(false));
+  }, [materialId, user]);
 
   const handleNotesChange = (e) => {
     setNotes(e.target.value);
@@ -542,7 +547,23 @@ IMPORTANT FORMATTING RULES:
 
       {/* Editor or Formatted Summary Preview Body */}
       <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-        {user && activeTab === 'edit' ? (
+        {isLoadingNotes ? (
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '60px 20px',
+            color: 'var(--text-muted)',
+            gap: '12px'
+          }}>
+            <Loader2 size={26} className="animate-spin" style={{ color: 'var(--primary)' }} />
+            <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)' }}>
+              Loading study notes & summary...
+            </p>
+          </div>
+        ) : user && activeTab === 'edit' ? (
           <textarea
             id="notes-textarea"
             value={notes}
