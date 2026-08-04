@@ -1,17 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Trash2, FileText, Download, Edit2 } from 'lucide-react';
+import { BookOpen, Trash2, FileText, Download, Edit2, Sparkles, Loader2, Check } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
-import { downloadPdfFile } from '../../services/api';
+import { downloadPdfFile, fetchNotes, saveNotes } from '../../services/api';
 
 export default function MaterialCard({ material, subject, onOpenReader, onEdit, onDelete }) {
   const { user } = useAuth();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [hasNotes, setHasNotes] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!material.id) return;
+    fetchNotes(material.id)
+      .then(data => {
+        if (data && data.content && data.content.trim()) {
+          setHasNotes(true);
+        } else {
+          setHasNotes(false);
+        }
+      })
+      .catch(() => setHasNotes(false));
+  }, [material.id]);
 
   const hasPdf = Boolean(material.file_url);
 
@@ -29,6 +44,54 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
   const handleCardClick = () => {
     if (hasPdf && onOpenReader) {
       onOpenReader(material);
+    }
+  };
+
+  const handleAutoGenerateCard = async (e) => {
+    e.stopPropagation();
+    if (!material.id || !user || isGenerating) return;
+    setIsGenerating(true);
+    try {
+      const matTitle = material.title || 'Study Topic';
+      const weekInfo = rawWeek ? ` (${rawWeek})` : '';
+
+      const prompt = `You are a top university professor creating easy-to-read, crystal-clear study notes for students.
+Create a structured, readable study summary and exam takeaways for:
+- Material Title: ${matTitle}${weekInfo}
+
+IMPORTANT FORMATTING RULES:
+1. Do NOT use LaTeX math tags like \\text{} or \\texttt{}. Write equations simply like:
+   Class = State (Instance Variables) + Behavior (Methods)
+2. Use clean Markdown headings:
+   ### 📌 Overview & Core Concepts
+   ### 🔑 Key Definitions & Takeaways
+   ### 📐 Key Formulas & Equations
+   ### 💡 Exam Tips & Gotchas
+3. Use bolding (**term**) for key definitions.
+4. Keep bullet points concise and easy to read.`;
+
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || atob('QVEuQWI4Uk42SVpUVkxqXzNOaV9RZzFQQ0xsTXlFRUJlcHBoWlVlVUdKclNCeVZpY1NlR1E=');
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+
+      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+      const data = await res.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (generatedText) {
+        await saveNotes(material.id, generatedText);
+        setHasNotes(true);
+      }
+    } catch (err) {
+      console.error('Card auto-generate error:', err);
+      alert('Failed to generate summary with Gemini 1.5 Flash. Please try again.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -118,6 +181,51 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
 
       {/* Right Action Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+        {/* Admin Auto-Generate Summary Button / Ready Badge */}
+        {user && hasPdf && (
+          !hasNotes ? (
+            <button
+              type="button"
+              onClick={handleAutoGenerateCard}
+              disabled={isGenerating}
+              className="btn"
+              style={{
+                padding: isMobile ? '5px 8px' : '6px 11px',
+                fontSize: '0.76rem',
+                borderRadius: '7px',
+                background: 'linear-gradient(135deg, #0d9488 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                fontWeight: 600,
+                boxShadow: '0 2px 6px rgba(13, 148, 136, 0.25)',
+                gap: '4px',
+                cursor: isGenerating ? 'wait' : 'pointer'
+              }}
+              title="Auto Generate Summary with Gemini 1.5 Flash"
+            >
+              {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+              <span>{isGenerating ? 'Generating...' : 'Auto Summary'}</span>
+            </button>
+          ) : (
+            <span
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                padding: '3px 8px',
+                borderRadius: '6px',
+                background: 'rgba(16, 185, 129, 0.1)',
+                color: '#059669',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="Summary Available"
+            >
+              <Check size={12} /> {!isMobile && 'Summary Ready'}
+            </span>
+          )
+        )}
+
         {hasPdf && material.file_url && (
           <button
             type="button"
