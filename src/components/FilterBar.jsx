@@ -54,20 +54,25 @@ function CustomSubjectDropdown({ subjects, selectedSubject, onSelectSubject }) {
 
       {/* Dropdown Menu Panel */}
       {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 6px)',
-          left: 0,
-          right: 0,
-          background: '#ffffff',
-          borderRadius: '12px',
-          border: '1px solid var(--glass-border)',
-          boxShadow: '0 12px 30px -5px rgba(15, 23, 42, 0.25)',
-          zIndex: 99999,
-          maxHeight: '260px',
-          overflowY: 'auto',
-          padding: '6px'
-        }}>
+        <div
+          className="hide-scrollbar"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            right: 0,
+            background: '#ffffff',
+            borderRadius: '12px',
+            border: '1px solid var(--glass-border)',
+            boxShadow: '0 12px 30px -5px rgba(15, 23, 42, 0.25)',
+            zIndex: 99999,
+            maxHeight: '260px',
+            overflowY: 'auto',
+            padding: '6px',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+        >
           {subjects.map(subj => {
             const isSelected = selectedSubject === subj.id;
             const label = `${subj.subject_number ? `${subj.subject_number} - ` : ''}${subj.name}`;

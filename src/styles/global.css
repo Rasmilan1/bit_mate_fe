@@ -41,6 +41,17 @@
   padding: 0;
 }
 
+/* Utility to hide scrollbar track visually while keeping scroll functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
+}
+
 html, body {
   font-family: var(--font-sans);
   background-color: var(--bg-primary);
