@@ -1,10 +1,12 @@
 import React from 'react';
 import MaterialCard from './MaterialCard';
-import { BookOpen, Upload } from 'lucide-react';
+import { BookOpen, Upload, Calendar } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { getCurrentAcademicWeek } from '../../utils/weekHelper';
 
 export default function MaterialGrid({ materials, subjects, onOpenReader, onEdit, onDelete, onOpenUpload }) {
   const { user } = useAuth();
+  const currentWeek = getCurrentAcademicWeek();
 
   if (!materials || materials.length === 0) {
     return (
@@ -55,6 +57,39 @@ export default function MaterialGrid({ materials, subjects, onOpenReader, onEdit
       flexDirection: 'column',
       gap: '10px'
     }}>
+      {/* Dynamic Semester Progress Tracker Header */}
+      <div style={{
+        padding: '10px 14px',
+        borderRadius: '10px',
+        background: '#ffffff',
+        border: '1px solid var(--glass-border)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
+        fontSize: '0.8rem',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+        marginBottom: '2px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: 'var(--text-main)' }}>
+          <Calendar size={15} style={{ color: 'var(--primary)' }} />
+          <span>Semester Timeline</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          <span style={{ padding: '2px 8px', borderRadius: '5px', background: '#ecfdf5', color: '#047857', fontSize: '0.74rem', fontWeight: 600, border: '1px solid #a7f3d0' }}>
+            ✓ Finished (Weeks 1–{Math.max(1, currentWeek - 1)})
+          </span>
+          <span style={{ padding: '2px 8px', borderRadius: '5px', background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)', color: '#ffffff', fontSize: '0.74rem', fontWeight: 700, boxShadow: '0 2px 6px rgba(79,70,229,0.3)' }}>
+            ⚡ Current: Week {currentWeek}
+          </span>
+          <span style={{ padding: '2px 8px', borderRadius: '5px', background: '#f1f5f9', color: '#64748b', fontSize: '0.74rem', fontWeight: 500, border: '1px solid #cbd5e1' }}>
+            Upcoming (Week {currentWeek + 1}+)
+          </span>
+        </div>
+      </div>
+
       {materials.map(material => (
         <MaterialCard
           key={material.id}

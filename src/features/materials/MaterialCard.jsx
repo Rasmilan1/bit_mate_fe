@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, Trash2, FileText, Download, Edit2, Sparkles, Loader2, Check } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { downloadPdfFile, fetchNotes, saveNotes } from '../../services/api';
+import { getWeekStatus } from '../../utils/weekHelper';
 
 export default function MaterialCard({ material, subject, onOpenReader, onEdit, onDelete }) {
   const { user } = useAuth();
@@ -37,9 +38,7 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
   };
 
   const rawWeek = material.week_info || (subject ? subject.week_info : '');
-  const weekLabel = rawWeek
-    ? (/^week/i.test(String(rawWeek).trim()) ? String(rawWeek).trim() : `Week ${String(rawWeek).trim()}`)
-    : '';
+  const weekInfo = getWeekStatus(rawWeek);
 
   const handleCardClick = () => {
     if (hasPdf && onOpenReader) {
@@ -53,11 +52,11 @@ export default function MaterialCard({ material, subject, onOpenReader, onEdit, 
     setIsGenerating(true);
     try {
       const matTitle = material.title || 'Study Topic';
-      const weekInfo = rawWeek ? ` (${rawWeek})` : '';
+      const weekStr = rawWeek ? ` (${rawWeek})` : '';
 
       const prompt = `You are a top university professor creating easy-to-read, crystal-clear study notes for students.
 Create a structured, readable study summary and exam takeaways for:
-- Material Title: ${matTitle}${weekInfo}
+- Material Title: ${matTitle}${weekStr}
 
 IMPORTANT FORMATTING RULES:
 1. Do NOT use LaTeX math tags like \\text{} or \\texttt{}. Write equations simply like:
@@ -140,20 +139,19 @@ IMPORTANT FORMATTING RULES:
           WebkitBoxOrient: 'vertical',
           overflow: 'hidden'
         }}>
-          {weekLabel && (
+          {weekInfo.badgeText && (
             <span style={{
               display: 'inline-block',
-              fontSize: '0.74rem',
-              fontWeight: 700,
-              padding: '1px 6px',
-              borderRadius: '5px',
-              backgroundColor: hasPdf ? 'var(--primary-light)' : '#e2e8f0',
-              color: hasPdf ? 'var(--primary)' : '#64748b',
-              border: '1px solid ' + (hasPdf ? 'rgba(79, 70, 229, 0.2)' : '#cbd5e1'),
+              fontSize: '0.73rem',
+              padding: '2px 7px',
+              borderRadius: '6px',
+              border: '1px solid',
               marginRight: '6px',
-              verticalAlign: 'middle'
+              verticalAlign: 'middle',
+              whiteSpace: 'nowrap',
+              ...weekInfo.style
             }}>
-              {weekLabel}
+              {weekInfo.badgeText}
             </span>
           )}
           {material.title}
