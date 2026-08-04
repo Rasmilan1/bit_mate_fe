@@ -239,16 +239,21 @@ function renderFormattedContent(text, isAdmin = false) {
 export default function SplitNotesEditor({ materialId, material }) {
   const { user } = useAuth();
   const [notes, setNotes] = useState('');
+  const [savedNotes, setSavedNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [activeTab, setActiveTab] = useState(user ? 'edit' : 'preview');
 
+  const hasChanges = notes.trim() !== savedNotes.trim();
+
   useEffect(() => {
     if (!materialId) return;
     fetchNotes(materialId)
       .then(data => {
-        setNotes(data.content || '');
+        const content = data.content || '';
+        setNotes(content);
+        setSavedNotes(content);
       })
       .catch(err => console.error('Error loading notes:', err));
   }, [materialId]);
@@ -282,10 +287,11 @@ export default function SplitNotesEditor({ materialId, material }) {
   };
 
   const handleSave = async () => {
-    if (!materialId || !user) return;
+    if (!materialId || !user || !hasChanges) return;
     setIsSaving(true);
     try {
       await saveNotes(materialId, notes);
+      setSavedNotes(notes);
       setLastSaved(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Error saving notes:', err);
@@ -334,6 +340,7 @@ IMPORTANT FORMATTING RULES:
       if (generatedText) {
         setNotes(generatedText);
         await saveNotes(materialId, generatedText);
+        setSavedNotes(generatedText);
         setLastSaved(new Date().toLocaleTimeString());
         setActiveTab('preview');
       }
@@ -451,9 +458,16 @@ IMPORTANT FORMATTING RULES:
           {user && (
             <button
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || !hasChanges}
               className="btn btn-primary"
-              style={{ padding: '5px 11px', fontSize: '0.78rem', borderRadius: '7px' }}
+              style={{
+                padding: '5px 11px',
+                fontSize: '0.78rem',
+                borderRadius: '7px',
+                opacity: hasChanges && !isSaving ? 1 : 0.55,
+                cursor: hasChanges && !isSaving ? 'pointer' : 'not-allowed'
+              }}
+              title={hasChanges ? "Save changes to database" : "No unsaved changes"}
             >
               <Save size={13} />
               {isSaving ? 'Saving...' : 'Save'}
