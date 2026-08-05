@@ -114,10 +114,15 @@ function MainAppContent() {
     return Array.from(map.values());
   }, [semesters]);
 
+  // Public visible semesters for non-admin visitors
+  const publicSemesters = React.useMemo(() => {
+    if (user) return uniqueSemesters;
+    return uniqueSemesters.filter(s => s.is_visible !== false && String(s.is_visible) !== 'false');
+  }, [uniqueSemesters, user]);
+
   // Auto-switch away from hidden semesters for normal non-admin visitors
   useEffect(() => {
     if (!user && uniqueSemesters.length > 0) {
-      const publicSemesters = uniqueSemesters.filter(s => s.is_visible !== false && String(s.is_visible) !== 'false');
       if (publicSemesters.length > 0) {
         const isCurrentPublic = selectedSemester && publicSemesters.some(s => String(s.id) === String(selectedSemester));
         if (!isCurrentPublic) {
@@ -127,13 +132,26 @@ function MainAppContent() {
         setSelectedSemester(null);
       }
     }
-  }, [user, uniqueSemesters, selectedSemester]);
+  }, [user, uniqueSemesters, publicSemesters, selectedSemester]);
 
-  // Filter subjects strictly based on selected semester
+  // Filter subjects strictly based on public visibility and selected semester
+  const visibleSubjects = React.useMemo(() => {
+    if (user) return subjects; // Admin sees all subjects
+    const validPublicSemIds = new Set(publicSemesters.map(s => String(s.id)));
+    return subjects.filter(s => {
+      if (!s.semester_id) return true;
+      return validPublicSemIds.has(String(s.semester_id));
+    });
+  }, [subjects, publicSemesters, user]);
+
   const filteredSubjects = React.useMemo(() => {
-    if (!selectedSemester) return subjects;
-    return subjects.filter(s => String(s.semester_id) === String(selectedSemester));
-  }, [subjects, selectedSemester]);
+    if (!selectedSemester) return visibleSubjects;
+    // If selected semester is hidden for non-admin, return 0 subjects
+    if (!user && !publicSemesters.some(s => String(s.id) === String(selectedSemester))) {
+      return [];
+    }
+    return visibleSubjects.filter(s => String(s.semester_id) === String(selectedSemester));
+  }, [visibleSubjects, publicSemesters, selectedSemester, user]);
 
   // Persist and restore selected subject across refreshes
   useEffect(() => {
@@ -157,13 +175,21 @@ function MainAppContent() {
 
   // Filter materials based on search query, selected semester, & selected subject
   const filteredMaterials = materials.filter(m => {
+    // Non-admin visitors cannot see materials of hidden subjects/semesters
+    if (!user) {
+      const validSubjectIds = new Set(visibleSubjects.map(s => String(s.id)));
+      if (m.subject_id && !validSubjectIds.has(String(m.subject_id))) {
+        return false;
+      }
+    }
+
     // If a subject tab is selected
     if (selectedSubject) {
       if (m.subject_id && String(m.subject_id) !== String(selectedSubject)) {
         return false;
       }
     } else if (selectedSemester) {
-      // If a semester tab is selected, match materials in this semester or general
+      // If a semester tab is selected, match materials in this semester
       const subjectIdsInSemester = new Set(filteredSubjects.map(s => String(s.id)));
       if (m.subject_id && !subjectIdsInSemester.has(String(m.subject_id))) {
         return false;
