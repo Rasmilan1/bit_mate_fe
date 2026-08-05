@@ -95,26 +95,36 @@ function MainAppContent() {
     loadData();
   }, []);
 
-  // Deduplicate semesters by name
+  // Deduplicate semesters by name and merge visibility correctly
   const uniqueSemesters = React.useMemo(() => {
-    const seen = new Set();
-    return (semesters || []).filter(s => {
-      if (!s || !s.name) return false;
+    const map = new Map();
+    (semesters || []).forEach(s => {
+      if (!s || !s.name) return;
       const key = s.name.trim().toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+      if (!map.has(key)) {
+        map.set(key, { ...s });
+      } else {
+        const existing = map.get(key);
+        // If ANY instance is hidden (is_visible === false or 'false'), mark the merged semester hidden!
+        if (s.is_visible === false || String(s.is_visible) === 'false' || existing.is_visible === false) {
+          existing.is_visible = false;
+        }
+      }
     });
+    return Array.from(map.values());
   }, [semesters]);
 
-  // Auto-select first public visible semester for normal visitors if no valid selection stored
+  // Auto-switch away from hidden semesters for normal non-admin visitors
   useEffect(() => {
     if (!user && uniqueSemesters.length > 0) {
-      const publicSemesters = uniqueSemesters.filter(s => s.is_visible !== false);
+      const publicSemesters = uniqueSemesters.filter(s => s.is_visible !== false && String(s.is_visible) !== 'false');
       if (publicSemesters.length > 0) {
-        if (!selectedSemester || !publicSemesters.some(s => String(s.id) === String(selectedSemester))) {
+        const isCurrentPublic = selectedSemester && publicSemesters.some(s => String(s.id) === String(selectedSemester));
+        if (!isCurrentPublic) {
           handleSelectSemester(publicSemesters[0].id);
         }
+      } else {
+        setSelectedSemester(null);
       }
     }
   }, [user, uniqueSemesters, selectedSemester]);
