@@ -303,59 +303,65 @@ export default function FilterBar({
             </span>
 
             {/* Individual Subject Chips */}
-            {subjects.map(subject => {
-              const isSelected = selectedSubject === subject.id;
-              return (
-                <div key={subject.id} style={{ display: 'inline-flex', alignItems: 'center' }}>
-                  <button
-                    onClick={() => onSelectSubject(subject.id)}
-                    className="btn"
-                    style={{
-                      padding: user ? '4px 8px 4px 10px' : '4px 11px',
-                      fontSize: '0.81rem',
-                      borderRadius: '7px',
-                      background: isSelected ? 'var(--accent)' : '#f8fafc',
-                      color: isSelected ? '#ffffff' : 'var(--text-main)',
-                      border: '1px solid ' + (isSelected ? 'var(--accent)' : 'var(--glass-border)'),
-                      fontWeight: isSelected ? 600 : 400,
-                      gap: '5px',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    {subject.subject_number && (
-                      <span style={{ fontWeight: 600, opacity: 0.9 }}>
-                        {subject.subject_number} -
-                      </span>
-                    )}
-                    {subject.name}
-                    {user && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', marginLeft: '4px' }}>
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (onEditSubject) onEditSubject(subject);
-                          }}
-                          title="Edit Subject"
-                          style={{ display: 'inline-flex', opacity: 0.8, cursor: 'pointer', padding: '1px' }}
-                        >
-                          <Edit2 size={11} />
+            {subjects.length === 0 ? (
+              <span style={{ fontSize: '0.81rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '2px 6px' }}>
+                No subjects created for this semester yet
+              </span>
+            ) : (
+              subjects.map(subject => {
+                const isSelected = selectedSubject === subject.id;
+                return (
+                  <div key={subject.id} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <button
+                      onClick={() => onSelectSubject(subject.id)}
+                      className="btn"
+                      style={{
+                        padding: user ? '4px 8px 4px 10px' : '4px 11px',
+                        fontSize: '0.81rem',
+                        borderRadius: '7px',
+                        background: isSelected ? 'var(--accent)' : '#f8fafc',
+                        color: isSelected ? '#ffffff' : 'var(--text-main)',
+                        border: '1px solid ' + (isSelected ? 'var(--accent)' : 'var(--glass-border)'),
+                        fontWeight: isSelected ? 600 : 400,
+                        gap: '5px',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {subject.subject_number && (
+                        <span style={{ fontWeight: 600, opacity: 0.9 }}>
+                          {subject.subject_number} -
                         </span>
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm(`Delete "${subject.name}"?`)) onDeleteSubject(subject.id);
-                          }}
-                          title="Delete Subject"
-                          style={{ display: 'inline-flex', opacity: 0.8, cursor: 'pointer', padding: '1px' }}
-                        >
-                          <X size={12} />
-                        </span>
-                      </div>
-                    )}
-                  </button>
-                </div>
-              );
-            })}
+                      )}
+                      {subject.name}
+                      {user && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', marginLeft: '4px' }}>
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onEditSubject) onEditSubject(subject);
+                            }}
+                            title="Edit Subject"
+                            style={{ display: 'inline-flex', opacity: 0.8, cursor: 'pointer', padding: '1px' }}
+                          >
+                            <Edit2 size={11} />
+                          </span>
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Delete "${subject.name}"?`)) onDeleteSubject(subject.id);
+                            }}
+                            title="Delete Subject"
+                            style={{ display: 'inline-flex', opacity: 0.8, cursor: 'pointer', padding: '1px' }}
+                          >
+                            <X size={12} />
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                );
+              })
+            )}
 
             {user && (
               <button

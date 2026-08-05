@@ -119,11 +119,10 @@ function MainAppContent() {
     }
   }, [user, uniqueSemesters, selectedSemester]);
 
-  // Filter subjects based on selected semester
+  // Filter subjects strictly based on selected semester
   const filteredSubjects = React.useMemo(() => {
     if (!selectedSemester) return subjects;
-    const matched = subjects.filter(s => String(s.semester_id) === String(selectedSemester) || !s.semester_id);
-    return matched.length > 0 ? matched : subjects;
+    return subjects.filter(s => String(s.semester_id) === String(selectedSemester));
   }, [subjects, selectedSemester]);
 
   // Persist and restore selected subject across refreshes
