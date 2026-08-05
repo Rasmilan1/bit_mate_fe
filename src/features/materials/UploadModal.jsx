@@ -218,6 +218,31 @@ export default function UploadModal({ isOpen, onClose, subjects, materials = [],
           </div>
 
           <div>
+            <label htmlFor="upload-subject-select" style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
+              Assign to Subject
+            </label>
+            <select
+              id="upload-subject-select"
+              name="subjectId"
+              className="input-field"
+              value={subjectId}
+              onChange={e => setSubjectId(e.target.value)}
+              style={{ width: '100%' }}
+              required
+            >
+              {subjects.length === 0 ? (
+                <option value="">No subjects in this semester</option>
+              ) : (
+                subjects.map(subj => (
+                  <option key={subj.id} value={subj.id}>
+                    {subj.subject_number ? `${subj.subject_number} - ` : ''}{subj.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div>
             <label htmlFor="upload-title" style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
               Document Title / Topic
             </label>

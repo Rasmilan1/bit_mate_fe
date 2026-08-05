@@ -339,7 +339,7 @@ function MainAppContent() {
       <UploadModal
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
-        subjects={filteredSubjects.length > 0 ? filteredSubjects : subjects}
+        subjects={selectedSemester ? filteredSubjects : subjects}
         materials={materials}
         defaultSubjectId={selectedSubject}
         onUpload={handleUploadMaterial}
