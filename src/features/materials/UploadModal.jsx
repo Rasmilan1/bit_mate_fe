@@ -23,10 +23,13 @@ export default function UploadModal({ isOpen, onClose, subjects, materials = [],
 
   React.useEffect(() => {
     if (isOpen) {
-      if (defaultSubjectId) {
+      const matchDefault = defaultSubjectId && subjects.some(s => String(s.id) === String(defaultSubjectId));
+      if (matchDefault) {
         setSubjectId(defaultSubjectId);
       } else if (subjects.length > 0) {
         setSubjectId(subjects[0].id);
+      } else {
+        setSubjectId('');
       }
     }
   }, [isOpen, defaultSubjectId, subjects]);
@@ -215,31 +218,6 @@ export default function UploadModal({ isOpen, onClose, subjects, materials = [],
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Click or drop file here</span>
               </div>
             )}
-          </div>
-
-          <div>
-            <label htmlFor="upload-subject-select" style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
-              Assign to Subject
-            </label>
-            <select
-              id="upload-subject-select"
-              name="subjectId"
-              className="input-field"
-              value={subjectId}
-              onChange={e => setSubjectId(e.target.value)}
-              style={{ width: '100%' }}
-              required
-            >
-              {subjects.length === 0 ? (
-                <option value="">No subjects in this semester</option>
-              ) : (
-                subjects.map(subj => (
-                  <option key={subj.id} value={subj.id}>
-                    {subj.subject_number ? `${subj.subject_number} - ` : ''}{subj.name}
-                  </option>
-                ))
-              )}
-            </select>
           </div>
 
           <div>
