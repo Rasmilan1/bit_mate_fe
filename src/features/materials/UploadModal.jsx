@@ -181,6 +181,22 @@ export default function UploadModal({ isOpen, onClose, subjects, materials = [],
         </h3>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Warning block if active semester has 0 subjects */}
+          {subjects.length === 0 && (
+            <div style={{
+              padding: '12px 14px',
+              borderRadius: '8px',
+              background: '#fffbebe6',
+              border: '1px solid #fde68a',
+              color: '#92400e',
+              fontSize: '0.84rem',
+              lineHeight: 1.4
+            }}>
+              ⚠️ <strong>No subjects in this semester yet.</strong><br />
+              Please create a subject for this semester first before uploading PDF materials.
+            </div>
+          )}
+
           {/* File Dropzone (Optional) */}
           <div
             onClick={() => document.getElementById('pdf-file-input').click()}
@@ -255,7 +271,7 @@ export default function UploadModal({ isOpen, onClose, subjects, materials = [],
             <button type="button" onClick={onClose} disabled={isUploading} className="btn btn-secondary">
               Cancel
             </button>
-            <button type="submit" disabled={!title.trim() || isUploading} className="btn btn-primary">
+            <button type="submit" disabled={!title.trim() || isUploading || subjects.length === 0} className="btn btn-primary">
               {isUploading ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
