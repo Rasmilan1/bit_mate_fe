@@ -34,11 +34,15 @@ export default function UploadModal({ isOpen, onClose, subjects, materials = [],
     }
   }, [isOpen, defaultSubjectId, subjects]);
 
-  // Auto-suggest next week number based on existing PDF materials in selected subject
+  // Auto-suggest next week number strictly based on existing PDF materials in selected subject
   React.useEffect(() => {
     if (isOpen) {
       const targetSubjId = subjectId || defaultSubjectId;
-      const subjMaterials = materials.filter(m => !targetSubjId || String(m.subject_id) === String(targetSubjId));
+      if (!targetSubjId || subjects.length === 0) {
+        setWeekInfo('');
+        return;
+      }
+      const subjMaterials = materials.filter(m => m.subject_id && String(m.subject_id) === String(targetSubjId));
       let maxWeek = 0;
       subjMaterials.forEach(m => {
         const matches = (m.week_info || '').match(/\d+/g);
@@ -52,7 +56,7 @@ export default function UploadModal({ isOpen, onClose, subjects, materials = [],
       const nextWeek = maxWeek > 0 ? maxWeek + 1 : 1;
       setWeekInfo(String(nextWeek));
     }
-  }, [isOpen, subjectId, defaultSubjectId, materials]);
+  }, [isOpen, subjectId, defaultSubjectId, materials, subjects]);
 
   if (!isOpen) return null;
 
