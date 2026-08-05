@@ -141,7 +141,7 @@ export default function FilterBar({
 
   const visibleSemesters = user
     ? semesters
-    : semesters.filter(s => s.is_visible !== false);
+    : semesters.filter(s => s.is_visible !== false && s.is_visible !== 'false' && s.is_visible !== 0);
 
   const activeSubjectObj = subjects.find(s => s.id === selectedSubject);
 

@@ -260,7 +260,17 @@ function MainAppContent() {
   const handleToggleSemesterVisibility = async (semesterId, is_visible) => {
     try {
       await toggleSemesterVisibility(semesterId, is_visible);
-      setSemesters(semesters.map(s => s.id === semesterId ? { ...s, is_visible } : s));
+      const targetSem = semesters.find(s => String(s.id) === String(semesterId));
+      const targetName = targetSem?.name?.trim().toLowerCase();
+
+      setSemesters(prev => prev.map(s => {
+        const matchesId = String(s.id) === String(semesterId);
+        const matchesName = targetName && s.name && s.name.trim().toLowerCase() === targetName;
+        if (matchesId || matchesName) {
+          return { ...s, is_visible };
+        }
+        return s;
+      }));
     } catch (err) {
       alert('Error updating semester visibility: ' + err.message);
     }
